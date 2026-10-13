@@ -10,6 +10,7 @@ export function createAuthRouter(authService: AuthService): Router {
   router.post("/register", controller.register);
   router.post("/login", controller.login);
   router.post("/logout", requireAuth(authService), controller.logout);
+  router.get("/me", requireAuth(authService), controller.me);
 
   return router;
 }

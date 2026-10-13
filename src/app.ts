@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import swaggerUi from "swagger-ui-express";
+import cors from "cors";
 import { openapiSpec } from "./docs/openapi";
 import type { AppDatabase } from "./db/database";
 import { UserRepository } from "./repositories/userRepository";
@@ -21,6 +22,7 @@ export function createApp(db: AppDatabase): Express {
   const authService = new AuthService(users, tokens, students);
 
   const app = express();
+  app.use(cors());
   app.use(express.json());
 
   app.get("/health", (_req, res) => {

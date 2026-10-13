@@ -23,5 +23,15 @@ export function createAuthController(authService: AuthService) {
     res.status(200).json({ message: "Sesión cerrada" });
   });
 
-  return { register, login, logout };
+  const me = asyncHandler(async (req: Request, res: Response) => {
+    const auth = req.auth!;
+    const user = authService.getUserFromClaim(auth);
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    res.status(200).json(user);
+  });
+
+  return { register, login, logout, me };
 }
