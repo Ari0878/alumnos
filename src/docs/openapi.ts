@@ -40,36 +40,28 @@ export const openapiSpec = {
         properties: {
           id: { type: "integer", example: 1 },
           email: { type: "string", format: "email", example: "ana@test.com" },
-          created_at: { type: "string", example: "2026-09-22 12:00:00" },
-          iss: { type: "string", example: "alumnos-api", description: "Claim estándar: Emisor del token" },
-          aud: { type: "string", example: "alumnos-app", description: "Claim estándar: Audiencia del token" },
-          exp: { type: "integer", example: 1728000000, description: "Claim estándar: Tiempo de expiración (timestamp)" },
-          iat: { type: "integer", example: 1727913600, description: "Claim estándar: Tiempo de emisión (timestamp)" },
-          jti: { type: "string", example: "550e8400-e29b-41d4-a716-446655440000", description: "Claim estándar: ID único del token" },
-        },
-      },
-      MeResponseStudent: {
-        type: "object",
-        properties: {
-          id: { type: "integer", example: 1 },
-          email: { type: "string", format: "email", example: "juan@alumnos.test" },
-          nombre: { type: "string", example: "Juan" },
-          apellido: { type: "string", example: "Pérez" },
-          matricula: { type: "string", example: "A001" },
-          created_at: { type: "string", example: "2026-09-22 12:00:00" },
-          updated_at: { type: "string", example: "2026-09-22 12:00:00" },
-          iss: { type: "string", example: "alumnos-api", description: "Claim estándar: Emisor del token" },
-          aud: { type: "string", example: "alumnos-app", description: "Claim estándar: Audiencia del token" },
-          exp: { type: "integer", example: 1728000000, description: "Claim estándar: Tiempo de expiración (timestamp)" },
-          iat: { type: "integer", example: 1727913600, description: "Claim estándar: Tiempo de emisión (timestamp)" },
-          jti: { type: "string", example: "550e8400-e29b-41d4-a716-446655440000", description: "Claim estándar: ID único del token" },
         },
       },
       LoginResponse: {
         type: "object",
         properties: {
           token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6..." },
+          refreshToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6..." },
           user: { $ref: "#/components/schemas/PublicUser" },
+        },
+      },
+       RefreshTokenRequest: {
+        type: "object",
+        required: ["refreshToken"],
+        properties: {
+          refreshToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6..." },
+        },
+      },
+      RefreshTokenResponse: {
+        type: "object",
+        properties: {
+          token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6..." },
+          refreshToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6..." },
         },
       },
       StudentInput: {
@@ -208,26 +200,52 @@ export const openapiSpec = {
         },
       },
     },
+    "/api/auth/refresh": {
+      post: {
+        tags: ["Auth"],
+        summary: "Renovar token de acceso",
+        description: "Intercambia un refresh token válido por un nuevo access token y refresh token (rotación)",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/RefreshTokenRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Tokens renovados",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/RefreshTokenResponse" },
+              },
+            },
+          },
+          "401": { description: "Refresh token inválido o expirado", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+        },
+      },
+    },
     "/api/auth/me": {
       get: {
         tags: ["Auth"],
-        summary: "Obtener información del usuario autenticado (desde JWT claims)",
-        description: "Usa el JWT para buscar la información completa en la base de datos.",
+        summary: "Obtener usuario actual",
+        description: "Devuelve la información del usuario autenticado basándose en el token JWT",
         security: [{ bearerAuth: [] }],
         responses: {
           "200": {
-            description: "Información del usuario (si role=user) o estudiante (si role=student)",
+            description: "Usuario autenticado",
             content: {
               "application/json": {
-                oneOf: [
-                  { $ref: "#/components/schemas/PublicUser" },
-                  { $ref: "#/components/schemas/MeResponseStudent" },
-                ],
+                schema: {
+                  type: "object",
+                  properties: { user: { $ref: "#/components/schemas/PublicUser" } },
+                },
               },
             },
           },
           "401": { description: "No autenticado", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
-          "404": { description: "Usuario no encontrado en base de datos", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
     },

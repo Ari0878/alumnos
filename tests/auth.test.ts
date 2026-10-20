@@ -48,6 +48,35 @@ describe("Autenticación", () => {
     expect(res.body.token).toBeTypeOf("string");
   });
 
+  it("devuelve el usuario y los claims del JWT autenticado", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "me@test.com", password: "secret123" });
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "me@test.com", password: "secret123" });
+    const token = login.body.token as string;
+
+    const res = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toEqual({ id: 1, email: "me@test.com" });
+    expect(res.body.claims).toMatchObject({
+      sub: "1",
+      email: "me@test.com",
+      kind: "user",
+    });
+    expect(res.body.claims).toEqual(
+      expect.objectContaining({
+        jti: expect.any(String),
+        iat: expect.any(Number),
+        exp: expect.any(Number),
+      }),
+    );
+  });
+
   it("rechaza credenciales incorrectas (401)", async () => {
     await request(app)
       .post("/api/auth/register")

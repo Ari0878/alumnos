@@ -1,15 +1,16 @@
 import express, { type Express } from "express";
 import swaggerUi from "swagger-ui-express";
-import cors from "cors";
 import { openapiSpec } from "./docs/openapi";
 import type { AppDatabase } from "./db/database";
 import { UserRepository } from "./repositories/userRepository";
 import { StudentRepository } from "./repositories/studentRepository";
 import { TokenRepository } from "./repositories/tokenRepository";
 import { AuthService } from "./services/authService";
+import { RefreshTokenRepository } from "./repositories/refreshTokenRepository";
 import { createAuthRouter } from "./routes/authRoutes";
 import { createStudentRouter } from "./routes/studentRoutes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+
 
 /**
  * Construye la aplicación Express con todas las dependencias inyectadas
@@ -19,11 +20,30 @@ export function createApp(db: AppDatabase): Express {
   const users = new UserRepository(db);
   const students = new StudentRepository(db);
   const tokens = new TokenRepository(db);
-  const authService = new AuthService(users, tokens, students);
+  const refreshTokens = new RefreshTokenRepository(db);
+  const authService = new AuthService(users, tokens, students, refreshTokens);
 
-  const app = express();
-  app.use(cors());
-  app.use(express.json());
+const app = express();
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:8081");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type,Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+app.use(express.json());
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });

@@ -17,21 +17,34 @@ export function createAuthController(authService: AuthService) {
     res.status(200).json(result);
   });
 
+  const refresh = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      res.status(400).json({ message: "Refresh token requerido" });
+      return;
+    }
+    
+    const result = await authService.refresh(refreshToken);
+    res.status(200).json(result);
+  });
+
   const logout = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
     // req.auth lo garantiza requireAuth
-    authService.logout(req.auth!);
+    authService.logout(req.auth!, refreshToken);
     res.status(200).json({ message: "Sesión cerrada" });
   });
 
   const me = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
-    const user = authService.getUserFromClaim(auth);
-    if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    res.status(200).json(user);
+    const payload = req.auth!;
+    res.json({ 
+      data: {
+        id: parseInt(payload.sub),
+        email: payload.email,
+      }
+    });
   });
 
-  return { register, login, logout, me };
+  return { register, login, refresh, logout, me };
 }
